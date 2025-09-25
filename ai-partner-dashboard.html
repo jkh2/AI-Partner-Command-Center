@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Partner Command Center</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000000;
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Starfield Background */
+        .starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .star {
+            position: absolute;
+            background: #ffffff;
+            border-radius: 50%;
+            opacity: 0;
+            animation: twinkle 1.893s infinite;
+        }
+
+        /* Different star sizes */
+        .star.small { 
+            width: 1px; 
+            height: 1px; 
+        }
+        
+        .star.medium { 
+            width: 2px; 
+            height: 2px; 
+        }
+        
+        .star.large { 
+            width: 3px; 
+            height: 3px; 
+        }
+
+        /* 528hz = 1.893 second period (1/528 * 1000) */
+        @keyframes twinkle {
+            0%, 100% { 
+                opacity: 0.1; 
+                transform: scale(0.8);
+            }
+            50% { 
+                opacity: 1; 
+                transform: scale(1.2);
+                box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            }
+        }
+
+        /* Golden stars for variety */
+        .star.golden {
+            background: #ffd700;
+        }
+
+        .star.golden:hover {
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.9);
+        }
+
+        .command-center {
+            display: grid;
+            grid-template-columns: 300px 1fr 320px;
+            grid-template-rows: 80px 1fr;
+            height: 100vh;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .title {
+            font-size: 2rem;
+            font-weight: 300;
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .session-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .glass-panel {
+            background: rgba(255, 215, 0, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 15px;
+            box-shadow: 
+                0 8px 32px rgba(255, 215, 0, 0.1),
+                inset 0 1px 0 rgba(255, 215, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .partners-panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-logo {
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 215, 0, 0.2);
+            background: rgba(255, 215, 0, 0.02);
+        }
+
+        .logo-image {
+            max-width: 120px;
+            height: auto;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .logo-image:hover {
+            opacity: 1;
+        }
+
+        .panel-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+            background: rgba(255, 215, 0, 0.05);
+        }
+
+        .panel-title {
+            color: #ffd700;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .panel-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .partner-card {
+            background: rgba(255, 215, 0, 0.08);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .partner-card:hover {
+            border-color: rgba(255, 215, 0, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .partner-card.active {
+            border-color: #ffd700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .partner-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .partner-name {
+            color: #ffd700;
+            font-weight: 600;
+        }
+
+        .partner-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-waiting { background: #ffa500; }
+        .status-ready { background: #00ff00; }
+        .status-error { background: #ff4444; }
+        .status-thinking { background: #66ccff; animation: pulse 1.5s infinite; }
+
+        .partner-capabilities {
+            font-size: 0.75rem;
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+
+        .partner-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small {
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            background: rgba(255, 215, 0, 0.1);
+            color: #ffd700;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-small:hover {
+            background: rgba(255, 215, 0, 0.2);
+        }
+
+        .conversation-main {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .conversation-thread {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .message-group {
+            margin-bottom: 25px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 15px 20px;
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .message.human {
+            background: rgba(100, 149, 237, 0.1);
+            border-left: 3px solid #6495ed;
+            margin-left: 20px;
+        }
+
+        .message.ai {
+            background: rgba(255, 215, 0, 0.1);
+            border-left: 3px solid #ffd700;
+            margin-right: 20px;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .speaker {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .message.human .speaker {
+            color: #6495ed;
+        }
+
+        .message.ai .speaker {
+            color: #ffd700;
+        }
+
+        .message-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .message-content {
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .composer {
+            border-top: 1px solid rgba(255, 215, 0, 0.2);
+            background: rgba(255, 215, 0, 0.03);
+        }
+
+        .composer-header {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 215, 0, 0.05);
+        }
+
+        .composer-mode {
+            color: #ffd700;
+            font-weight: 500;
+        }
+
+        .quick-templates {
+            display: flex;
+            gap: 8px;
+        }
+
+        .template-btn {
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            color: #ffd700;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .composer-input {
+            padding: 20px;
+        }
+
+        .message-input {
+            width: 100%;
+            min-height: 80px;
+            padding: 15px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            color: #fff;
+            resize: vertical;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .composer-actions {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .send-options {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 215, 0, 0.1);
+            color: #ffd700;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .btn:hover {
+            background: rgba(255, 215, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #1a1a1a;
+            border: none;
+            font-weight: 500;
+        }
+
+        .tools-panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .context-manager {
+            margin-bottom: 20px;
+        }
+
+        .context-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .context-format {
+            padding: 10px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 215, 0, 0.05);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .context-format:hover {
+            border-color: rgba(255, 215, 0, 0.4);
+        }
+
+        .context-format.active {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .format-name {
+            color: #ffd700;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .format-desc {
+            color: #aaa;
+            font-size: 0.75rem;
+            margin-top: 4px;
+        }
+
+        .export-area {
+            margin-top: 20px;
+        }
+
+        .export-textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-family: monospace;
+            font-size: 0.85rem;
+            resize: vertical;
+        }
+
+        .insights-panel {
+            margin-top: 20px;
+        }
+
+        .insight-item {
+            padding: 12px;
+            background: rgba(255, 215, 0, 0.05);
+            border-left: 3px solid #ffd700;
+            margin-bottom: 10px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .insight-type {
+            color: #ffd700;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .insight-text {
+            color: #ccc;
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #888;
+            font-style: italic;
+            padding: 40px;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 215, 0, 0.3);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="starfield" id="starfield"></div>
+    <div class="command-center">
+        <div class="header">
+            <div class="title">AI Partner Command Center</div>
+            <div class="session-controls">
+                <button class="btn" onclick="saveSession()">💾 Save Session</button>
+                <button class="btn" onclick="loadSession()">📂 Load Session</button>
+                <button class="btn" onclick="newSession()">🆕 New Session</button>
+            </div>
+        </div>
+
+        <!-- Partners Panel -->
+        <div class="glass-panel partners-panel">
+            <div class="panel-header">
+                <div class="panel-title">AI Partners</div>
+            </div>
+            <div class="panel-content">
+                <div id="partnersContainer">
+                    <!-- Partners will be added here -->
+                </div>
+                <button class="btn btn-small" onclick="addPartner()">+ Add Partner</button>
+            </div>
+            <div class="panel-logo">
+                <img src="logo.png" 
+                     alt="Sentinel AI Systems" 
+                     class="logo-image" />
+            </div>
+        </div>
+
+        <!-- Main Conversation -->
+        <div class="glass-panel conversation-main">
+            <div class="panel-header">
+                <div class="panel-title">Conversation Flow</div>
+            </div>
+            <div class="conversation-thread" id="conversationThread">
+                <div class="empty-state">
+                    Welcome to the AI Partner Command Center<br>
+                    Add partners and start collaborating
+                </div>
+            </div>
+            
+            <div class="composer">
+                <div class="composer-header">
+                    <div class="composer-mode">Compose Message</div>
+                    <div class="quick-templates">
+                        <button class="template-btn" onclick="insertTemplate('partner-intro')">Intro Partners</button>
+                        <button class="template-btn" onclick="insertTemplate('build-on')">Build On</button>
+                        <button class="template-btn" onclick="insertTemplate('synthesize')">Synthesize</button>
+                        <button class="template-btn" onclick="insertTemplate('clarify')">Clarify</button>
+                    </div>
+                </div>
+                <div class="composer-input">
+                    <textarea 
+                        class="message-input" 
+                        id="messageInput" 
+                        placeholder="Type your message or question for the AI partners..."
+                    ></textarea>
+                </div>
+                <div class="composer-actions">
+                    <div class="send-options">
+                        <select id="targetPartner" class="btn">
+                            <option value="all">Send to All</option>
+                        </select>
+                        <select id="messageType" class="btn">
+                            <option value="question">Question</option>
+                            <option value="request">Request</option>
+                            <option value="info">Information</option>
+                            <option value="synthesis">Synthesis</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="sendMessage()">Send Message</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tools Panel -->
+        <div class="glass-panel tools-panel">
+            <div class="panel-header">
+                <div class="panel-title">Coordination Tools</div>
+            </div>
+            <div class="panel-content">
+                <div class="context-manager">
+                    <h4 style="color: #ffd700; margin-bottom: 15px;">Context Formats</h4>
+                    <div class="context-options">
+                        <div class="context-format active" onclick="selectContextFormat('full')">
+                            <div class="format-name">Full Context</div>
+                            <div class="format-desc">Complete conversation history</div>
+                        </div>
+                        <div class="context-format" onclick="selectContextFormat('summary')">
+                            <div class="format-name">Smart Summary</div>
+                            <div class="format-desc">Key points and recent messages</div>
+                        </div>
+                        <div class="context-format" onclick="selectContextFormat('minimal')">
+                            <div class="format-name">Minimal</div>
+                            <div class="format-desc">Just the essentials</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="export-area">
+                    <h4 style="color: #ffd700; margin-bottom: 15px;">Context Export</h4>
+                    <textarea 
+                        class="export-textarea" 
+                        id="contextExport" 
+                        placeholder="Generated context for AI partners will appear here..."
+                        readonly
+                    ></textarea>
+                    <div style="margin-top: 10px; display: flex; gap: 8px;">
+                        <button class="btn-small" onclick="generateContext()">🔄 Update</button>
+                        <button class="btn-small" onclick="copyContext()">📋 Copy</button>
+                        <button class="btn-small" onclick="shareWithPartner()">📤 Send to Partner</button>
+                    </div>
+                </div>
+
+                <div class="insights-panel">
+                    <h4 style="color: #ffd700; margin-bottom: 15px;">AI Insights</h4>
+                    <div id="insightsContainer">
+                        <div class="insight-item">
+                            <div class="insight-type">COLLABORATION TIP</div>
+                            <div class="insight-text">Start with a clear question to get focused responses</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let partners = [];
+        let conversation = [];
+        let activeContextFormat = 'full';
+        let messageCounter = 0;
+
+        // Partner management
+        function addPartner() {
+            const name = prompt('Partner name:') || `Partner ${partners.length + 1}`;
+            const capabilities = prompt('Capabilities (optional):') || 'General AI Assistant';
+            
+            const partner = {
+                id: Date.now(),
+                name: name.trim(),
+                capabilities,
+                status: 'waiting',
+                contextWindow: 8000,
+                lastResponse: null,
+                responseCount: 0
+            };
+            
+            partners.push(partner);
+            updatePartnersDisplay();
+            updateTargetPartnerSelect();
+            saveData();
+        }
+
+        function updatePartnerStatus(partnerId, status) {
+            const partner = partners.find(p => p.id === partnerId);
+            if (partner) {
+                partner.status = status;
+                updatePartnersDisplay();
+            }
+        }
+
+        function updatePartnersDisplay() {
+            const container = document.getElementById('partnersContainer');
+            container.innerHTML = partners.map(partner => `
+                <div class="partner-card ${partner.status === 'ready' ? 'active' : ''}">
+                    <div class="partner-header">
+                        <div class="partner-name">${partner.name}</div>
+                        <div class="partner-status">
+                            <div class="status-dot status-${partner.status}"></div>
+                            <span>${partner.status}</span>
+                        </div>
+                    </div>
+                    <div class="partner-capabilities">${partner.capabilities}</div>
+                    <div class="partner-actions">
+                        <button class="btn-small" onclick="setPartnerStatus(${partner.id}, 'thinking')">💭 Thinking</button>
+                        <button class="btn-small" onclick="setPartnerStatus(${partner.id}, 'ready')">✅ Ready</button>
+                        <button class="btn-small" onclick="setPartnerStatus(${partner.id}, 'waiting')">⏳ Waiting</button>
+                        <button class="btn-small" onclick="removePartner(${partner.id})">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function setPartnerStatus(partnerId, status) {
+            updatePartnerStatus(partnerId, status);
+            saveData();
+        }
+
+        function removePartner(partnerId) {
+            if (confirm('Remove this partner?')) {
+                partners = partners.filter(p => p.id !== partnerId);
+                updatePartnersDisplay();
+                updateTargetPartnerSelect();
+                saveData();
+            }
+        }
+
+        // Message management
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const content = input.value.trim();
+            const targetPartner = document.getElementById('targetPartner').value;
+            const messageType = document.getElementById('messageType').value;
+            
+            if (!content) return;
+            
+            const message = {
+                id: ++messageCounter,
+                sender: 'Human',
+                content,
+                timestamp: new Date(),
+                type: 'human',
+                messageType,
+                targetPartner
+            };
+            
+            conversation.push(message);
+            input.value = '';
+            
+            updateConversationDisplay();
+            generateContext();
+            addInsight('MESSAGE_SENT', `Sent ${messageType} to ${targetPartner}`);
+            saveData();
+
+            // Update partner statuses
+            if (targetPartner === 'all') {
+                partners.forEach(p => p.status = 'thinking');
+            } else {
+                const partner = partners.find(p => p.name === targetPartner);
+                if (partner) partner.status = 'thinking';
+            }
+            updatePartnersDisplay();
+        }
+
+        function addPartnerResponse(partnerId) {
+            const partner = partners.find(p => p.id === partnerId);
+            if (!partner) return;
+
+            const response = prompt(`Add response from ${partner.name}:`);
+            if (!response) return;
+
+            const message = {
+                id: ++messageCounter,
+                sender: partner.name,
+                content: response.trim(),
+                timestamp: new Date(),
+                type: 'ai',
+                partnerId
+            };
+
+            conversation.push(message);
+            partner.status = 'ready';
+            partner.lastResponse = new Date();
+            partner.responseCount++;
+
+            updateConversationDisplay();
+            updatePartnersDisplay();
+            generateContext();
+            addInsight('RESPONSE_RECEIVED', `${partner.name} responded`);
+            saveData();
+        }
+
+        function updateConversationDisplay() {
+            const thread = document.getElementById('conversationThread');
+            
+            if (conversation.length === 0) {
+                thread.innerHTML = '<div class="empty-state">Welcome to the AI Partner Command Center<br>Add partners and start collaborating</div>';
+                return;
+            }
+
+            thread.innerHTML = conversation.map(msg => `
+                <div class="message ${msg.type}">
+                    <div class="message-header">
+                        <span class="speaker">${msg.sender}</span>
+                        <div class="message-actions">
+                            <button class="action-btn" onclick="copyMessage(${msg.id})" title="Copy">📋</button>
+                            <button class="action-btn" onclick="shareMessage(${msg.id})" title="Share">📤</button>
+                            <button class="action-btn" onclick="buildOnMessage(${msg.id})" title="Build On">🔗</button>
+                        </div>
+                    </div>
+                    <div class="message-content">${msg.content}</div>
+                </div>
+            `).join('');
+            
+            thread.scrollTop = thread.scrollHeight;
+        }
+
+        // Template system
+        const templates = {
+            'partner-intro': "Here's what we're working on: [CONTEXT]. I'd like each of your perspectives on this.",
+            'build-on': "[PARTNER] just made an interesting point about [TOPIC]. What are your thoughts on building from this?",
+            'synthesize': "I'm seeing different perspectives from you all. Help me synthesize: [QUESTION]",
+            'clarify': "I need clarification on [POINT]. Can you elaborate or provide examples?"
+        };
+
+        function insertTemplate(templateId) {
+            const template = templates[templateId];
+            const input = document.getElementById('messageInput');
+            input.value = template;
+            input.focus();
+        }
+
+        // Context management
+        function selectContextFormat(format) {
+            activeContextFormat = format;
+            document.querySelectorAll('.context-format').forEach(el => el.classList.remove('active'));
+            event.target.closest('.context-format').classList.add('active');
+            generateContext();
+        }
+
+        function generateContext() {
+            const exportArea = document.getElementById('contextExport');
+            
+            if (conversation.length === 0) {
+                exportArea.value = 'No conversation yet. Start by sending a message to your AI partners.';
+                return;
+            }
+
+            let context = '';
+            
+            switch (activeContextFormat) {
+                case 'full':
+                    context = conversation.map(msg => 
+                        `${msg.sender}: ${msg.content}`
+                    ).join('\n\n');
+                    break;
+                    
+                case 'summary':
+                    const recentMessages = conversation.slice(-5);
+                    const summary = conversation.length > 5 ? '[Previous conversation summarized]\n\n' : '';
+                    context = summary + recentMessages.map(msg => 
+                        `${msg.sender}: ${msg.content}`
+                    ).join('\n\n');
+                    break;
+                    
+                case 'minimal':
+                    const lastMessage = conversation[conversation.length - 1];
+                    context = `Current question: ${lastMessage.content}`;
+                    break;
+            }
+            
+            exportArea.value = context;
+        }
+
+        function copyContext() {
+            const exportArea = document.getElementById('contextExport');
+            exportArea.select();
+            document.execCommand('copy');
+            addInsight('CONTEXT_COPIED', 'Context copied to clipboard');
+        }
+
+        // Insights system
+        function addInsight(type, text) {
+            const container = document.getElementById('insightsContainer');
+            const insight = document.createElement('div');
+            insight.className = 'insight-item';
+            insight.innerHTML = `
+                <div class="insight-type">${type}</div>
+                <div class="insight-text">${text}</div>
+            `;
+            container.insertBefore(insight, container.firstChild);
+            
+            // Keep only last 5 insights
+            while (container.children.length > 5) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        // Utility functions
+        function updateTargetPartnerSelect() {
+            const select = document.getElementById('targetPartner');
+            select.innerHTML = '<option value="all">Send to All</option>' + 
+                partners.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+        }
+
+        function copyMessage(messageId) {
+            const message = conversation.find(m => m.id === messageId);
+            if (message) {
+                navigator.clipboard.writeText(message.content);
+                addInsight('MESSAGE_COPIED', `Copied message from ${message.sender}`);
+            }
+        }
+
+        function shareMessage(messageId) {
+            // Implementation for sharing specific message
+            addInsight('MESSAGE_SHARED', 'Message prepared for sharing');
+        }
+
+        function buildOnMessage(messageId) {
+            const message = conversation.find(m => m.id === messageId);
+            if (message) {
+                const template = `Building on ${message.sender}'s point: "${message.content.substring(0, 50)}..." \n\nI'd like to explore: `;
+                document.getElementById('messageInput').value = template;
+                document.getElementById('messageInput').focus();
+            }
+        }
+
+        // Session management
+        function saveData() {
+            const data = {
+                partners,
+                conversation,
+                messageCounter,
+                activeContextFormat
+            };
+            localStorage.setItem('aiCommandCenter', JSON.stringify(data));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('aiCommandCenter');
+            if (saved) {
+                const data = JSON.parse(saved);
+                partners = data.partners || [];
+                conversation = (data.conversation || []).map(msg => ({
+                    ...msg,
+                    timestamp: new Date(msg.timestamp)
+                }));
+                messageCounter = data.messageCounter || 0;
+                activeContextFormat = data.activeContextFormat || 'full';
+                
+                updatePartnersDisplay();
+                updateConversationDisplay();
+                updateTargetPartnerSelect();
+                generateContext();
+            }
+        }
+
+        function saveSession() {
+            const sessionName = prompt('Session name:') || `Session_${Date.now()}`;
+            const sessions = JSON.parse(localStorage.getItem('aiCommandSessions') || '{}');
+            sessions[sessionName] = {
+                partners,
+                conversation,
+                messageCounter,
+                activeContextFormat,
+                timestamp: new Date()
+            };
+            localStorage.setItem('aiCommandSessions', JSON.stringify(sessions));
+            addInsight('SESSION_SAVED', `Session "${sessionName}" saved`);
+        }
+
+        function loadSession() {
+            const sessions = JSON.parse(localStorage.getItem('aiCommandSessions') || '{}');
+            const sessionNames = Object.keys(sessions);
+            
+            if (sessionNames.length === 0) {
+                alert('No saved sessions found');
+                return;
+            }
+            
+            const sessionName = prompt('Choose session:\n' + sessionNames.join('\n'));
+            if (sessionName && sessions[sessionName]) {
+                const session = sessions[sessionName];
+                partners = session.partners;
+                conversation = session.conversation.map(msg => ({
+                    ...msg,
+                    timestamp: new Date(msg.timestamp)
+                }));
+                messageCounter = session.messageCounter;
+                activeContextFormat = session.activeContextFormat || 'full';
+                
+                updatePartnersDisplay();
+                updateConversationDisplay();
+                updateTargetPartnerSelect();
+                generateContext();
+                addInsight('SESSION_LOADED', `Session "${sessionName}" loaded`);
+            }
+        }
+
+        function newSession() {
+            if (confirm('Start new session? Current work will be lost unless saved.')) {
+                partners = [];
+                conversation = [];
+                messageCounter = 0;
+                activeContextFormat = 'full';
+                
+                updatePartnersDisplay();
+                updateConversationDisplay();
+                updateTargetPartnerSelect();
+                generateContext();
+                
+                localStorage.removeItem('aiCommandCenter');
+                addInsight('NEW_SESSION', 'New session started');
+            }
+        }
+
+        // Initialize starfield
+        function createStarfield() {
+            const starfield = document.getElementById('starfield');
+            const starCount = 200;
+            
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                
+                // Random size
+                const sizeRandom = Math.random();
+                if (sizeRandom < 0.6) {
+                    star.classList.add('small');
+                } else if (sizeRandom < 0.9) {
+                    star.classList.add('medium');
+                } else {
+                    star.classList.add('large');
+                }
+                
+                // Occasional golden stars
+                if (Math.random() < 0.15) {
+                    star.classList.add('golden');
+                }
+                
+                // Random position
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                
+                // Random animation delay for natural twinkling
+                star.style.animationDelay = Math.random() * 1.893 + 's';
+                
+                starfield.appendChild(star);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            createStarfield();
+            loadData();
+            
+            // Add some default partners for demo
+            if (partners.length === 0) {
+                partners = [
+                    { id: 1, name: 'Claude', capabilities: 'Reasoning, Analysis, Writing', status: 'waiting', contextWindow: 200000, responseCount: 0 },
+                    { id: 2, name: 'GPT-4', capabilities: 'Creative Tasks, Code, Conversation', status: 'waiting', contextWindow: 128000, responseCount: 0 },
+                    { id: 3, name: 'Gemini', capabilities: 'Multimodal, Research, Logic', status: 'waiting', contextWindow: 1000000, responseCount: 0 }
+                ];
+                updatePartnersDisplay();
+                updateTargetPartnerSelect();
+            }
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    sendMessage();
+                } else if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    saveSession();
+                } else if (e.ctrlKey && e.key === 'l') {
+                    e.preventDefault();
+                    loadSession();
+                }
+            });
+
+            // Auto-save every 30 seconds
+            setInterval(saveData, 30000);
+            
+            addInsight('SYSTEM_READY', 'Command Center initialized. Ctrl+Enter to send, Ctrl+S to save.');
+        });
+
+        // Advanced features
+        function shareWithPartner() {
+            const partnerName = prompt('Which partner to send context to?');
+            const partner = partners.find(p => p.name.toLowerCase().includes(partnerName.toLowerCase()));
+            
+            if (partner) {
+                partner.status = 'thinking';
+                updatePartnersDisplay();
+                addInsight('CONTEXT_SHARED', `Context sent to ${partner.name}`);
+                
+                // Simulate thinking time
+                setTimeout(() => {
+                    const response = prompt(`Add response from ${partner.name}:`);
+                    if (response) {
+                        const message = {
+                            id: ++messageCounter,
+                            sender: partner.name,
+                            content: response.trim(),
+                            timestamp: new Date(),
+                            type: 'ai',
+                            partnerId: partner.id
+                        };
+                        
+                        conversation.push(message);
+                        partner.status = 'ready';
+                        partner.lastResponse = new Date();
+                        partner.responseCount++;
+                        
+                        updateConversationDisplay();
+                        updatePartnersDisplay();
+                        generateContext();
+                        addInsight('RESPONSE_RECEIVED', `${partner.name} responded`);
+                        saveData();
+                    }
+                }, 1000);
+            }
+        }
+
+        // Add response functionality for partner cards
+        window.addPartnerResponse = addPartnerResponse;
+    </script>
+</body>
+</html>
