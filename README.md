@@ -191,7 +191,7 @@ We welcome contributions that enhance AI coordination workflows:
 
 ## 📄 License
 
-- see the [LICENSE](LICENSE) file for details.
+- see the [license.md](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
